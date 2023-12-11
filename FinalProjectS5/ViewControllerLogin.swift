@@ -215,10 +215,39 @@ class ViewControllerLogin: UIViewController {
 
         let credential = PhoneAuthProvider.provider().credential(withVerificationID: verificationID, verificationCode: codigo)
 
-        Auth.auth().signIn(with: credential) { (user, error) in
-            self.handleAuthResult(user, error)
-            // Después de iniciar sesión, realiza la transición
-            self.performSegue(withIdentifier: "iniciarsesionsegue", sender: nil)
+        Auth.auth().signIn(with: credential) { (authResult, error) in
+            self.handleAuthResult(authResult, error)
+
+            if let user = authResult?.user {
+                // Verificar si el número de teléfono ya existe en la base de datos
+                self.checkIfPhoneNumberExistsInDatabase(phoneNumber: user.phoneNumber) { phoneNumberExists in
+                    if phoneNumberExists {
+                        // Manejar la situación cuando el número de teléfono ya existe (por ejemplo, mostrar un mensaje de error)
+                        print("El número de teléfono ya está registrado en la base de datos")
+                    } else {
+                        // Almacenar la información del usuario en la base de datos
+                        self.saveUserToDatabase(userID: user.uid, email: user.phoneNumber, displayName: nil, photoURL: nil)
+                        
+                        // Realizar la transición después de almacenar la información del usuario
+                        self.performSegue(withIdentifier: "iniciarsesionsegue", sender: nil)
+                    }
+                }
+            }
+        }
+    }
+
+    // Función para verificar si el usuario ya existe en la base de datos
+    func checkIfPhoneNumberExistsInDatabase(phoneNumber: String?, completion: @escaping (Bool) -> Void) {
+        guard let phoneNumber = phoneNumber else {
+            completion(false)
+            return
+        }
+
+        let databaseRef = Database.database().reference().child("usuarios")
+
+        // Realizar una consulta para verificar si el número de teléfono ya existe
+        databaseRef.queryOrdered(byChild: "phoneNumber").queryEqual(toValue: phoneNumber).observeSingleEvent(of: .value) { snapshot in
+            completion(snapshot.exists())
         }
     }
 }

@@ -8,6 +8,7 @@
 import UIKit
 import AVFoundation
 import FirebaseStorage
+import FirebaseAnalytics
 
 class ViewControllerListenToMusic: UIViewController {
 
@@ -47,6 +48,8 @@ class ViewControllerListenToMusic: UIViewController {
         }
         
         timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateUI), userInfo: nil, repeats: true)
+        
+        Analytics.logEvent("music_view_loaded", parameters: nil)
     }
     
     @objc func updateUI() {
@@ -120,6 +123,9 @@ class ViewControllerListenToMusic: UIViewController {
             } else {
                 player.play()
                 playPauseButton.setImage(UIImage(systemName: "pause"), for: .normal)
+                
+                // Registra un evento cuando el usuario presiona el botón de reproducción/pausa
+                Analytics.logEvent("play_pause_button_tapped", parameters: nil)
             }
         }
     }
@@ -150,6 +156,9 @@ class ViewControllerListenToMusic: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         stopAudio()
+        
+        // Registra un evento cuando el usuario sale de la vista
+        Analytics.logEvent("music_view_closed", parameters: nil)
     }
 
 }

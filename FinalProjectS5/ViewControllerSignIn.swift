@@ -8,6 +8,7 @@
 import UIKit
 import FirebaseAuth
 import FirebaseDatabase
+import FirebaseAnalytics
 
 class ViewControllerSignIn: UIViewController {
 
@@ -57,6 +58,9 @@ class ViewControllerSignIn: UIViewController {
             if let error = error {
                 print("Se presentó el siguiente error al crear el usuario: \(error.localizedDescription)")
                 self.mostrarAlerta(titulo: "Error al Crear Usuario", mensaje: "Ocurrió un error al crear el usuario. Verifica tu conexión a Internet y vuelve a intentarlo.", accion: "Aceptar")
+
+                // Registra un evento de creación de usuario fallido
+                Analytics.logEvent("registro_fallido", parameters: ["error": error.localizedDescription])
             } else {
                 // Usuario creado exitosamente
                 print("El usuario fue creado exitosamente")
@@ -64,6 +68,9 @@ class ViewControllerSignIn: UIViewController {
                 // Guardar información adicional del usuario en la base de datos
                 if let uid = user?.user.uid, let email = user?.user.email {
                     self.saveAdditionalUserInfo(uid: uid, email: email)
+
+                    // Registra un evento de creación de usuario exitoso
+                    Analytics.logEvent("registro_exitoso", parameters: nil)
                 }
 
                 // Mostrar un mensaje de éxito con la opción de ir a la lista de músicas
@@ -80,13 +87,11 @@ class ViewControllerSignIn: UIViewController {
         }
     }
 
-    // Función para navegar a la lista de músicas
     func irAListaDeMusicas() {
         // Realizar el segue a la lista de músicas (asegúrate de tener un identificador adecuado)
         self.performSegue(withIdentifier: "registrocompletosegue", sender: self)
     }
 
-    // Función auxiliar para mostrar alertas
     func mostrarAlerta(titulo: String, mensaje: String, accion: String) {
         let alerta = UIAlertController(title: titulo, message: mensaje, preferredStyle: .alert)
         let btnOK = UIAlertAction(title: accion, style: .default, handler: nil)
@@ -94,24 +99,22 @@ class ViewControllerSignIn: UIViewController {
         present(alerta, animated: true, completion: nil)
     }
 
-    // Validar formato de correo electrónico
     func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
 
-    // Validar longitud de contraseña
     func isPasswordValid(_ password: String) -> Bool {
         return password.count >= 6
     }
 
     // Función para guardar información adicional del usuario en la base de datos
-    // Guardar información adicional del usuario en la base de datos
     func saveAdditionalUserInfo(uid: String, email: String) {
         let userData = ["email": email]
         Database.database().reference().child("usuarios").child(uid).setValue(userData)
+
+        // Registra un evento de almacenamiento exitoso de información adicional del usuario
+        Analytics.logEvent("informacion_adicional_guardada", parameters: nil)
     }
 }
-    
-
